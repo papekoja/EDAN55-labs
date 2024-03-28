@@ -30,19 +30,16 @@ pub fn get_random_subset(
 ) -> (HashMap<i32, Vec<(i32, i32)>>, HashMap<i32, Vec<(i32, i32)>>) {
     let mut set_a: HashMap<i32, Vec<(i32, i32)>> = HashMap::new();
     let mut set_b: HashMap<i32, Vec<(i32, i32)>> = HashMap::new();
+    let mut rng = rand::thread_rng(); // Add this line to import the `rand::Rng` trait
+
     for (&node_id, edges) in nodes {
-        if coin_flip() {
+        if rng.gen() {
             set_a.insert(node_id, edges.clone());
         } else {
             set_b.insert(node_id, edges.clone());
         }
     }
     (set_a, set_b)
-}
-
-pub fn coin_flip() -> bool {
-    let mut rng = rand::thread_rng();
-    rng.gen_bool(0.5)
 }
 
 pub fn swap(
