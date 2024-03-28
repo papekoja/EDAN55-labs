@@ -13,12 +13,8 @@ fn main() {
 
     let mut nodes: HashMap<i32, Vec<(i32, i32)>> = HashMap::new();
 
-    for (index, line) in reader.lines().enumerate() {
+    for (_, line) in reader.lines().enumerate().skip(1) {
         let line = line.unwrap();
-
-        if index == 0 {
-            continue;
-        }
 
         let parts: Vec<&str> = line.split_whitespace().collect();
         let node1 = parts[0].parse::<i32>().unwrap();
