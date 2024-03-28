@@ -4,9 +4,9 @@ use std::collections::HashMap;
 mod r;
 
 fn main() {
-    let path_matching = "./data/matching_1000.txt";
-    //let path_pw = "../data/pw09_100.9.txt";
-    let file = File::open(path_matching).unwrap();
+    //let path = "./data/matching_1000.txt";
+    let path = "./data/pw09_100.9.txt";
+    let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
     
     let mut nodes: HashMap<i32, Vec<(i32, i32)>> = HashMap::new();
@@ -25,8 +25,12 @@ fn main() {
         nodes.entry(node1).or_insert_with(Vec::new).push((node2, w));
         nodes.entry(node2).or_insert_with(Vec::new).push((node1, w));
     }
+
     /* for (key, edges) in &nodes {
         println!("Node {}: {:?}", key, edges);
     } */
     
+    let result_algorithm_r: i32 = r::r(&nodes);
+
+    println!("{}", result_algorithm_r);
 }
