@@ -2,6 +2,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 mod r;
+mod s;
+mod utils;
+mod rs;
 
 fn main() {
     //let path = "./data/matching_1000.txt";
@@ -29,8 +32,13 @@ fn main() {
     /* for (key, edges) in &nodes {
         println!("Node {}: {:?}", key, edges);
     } */
-    
-    let result_algorithm_r: i32 = r::r(&nodes);
 
-    println!("{}", result_algorithm_r);
+    let result_algorithm_r: i32 = r::r(&nodes);
+    println!("Algorithm R: {}", result_algorithm_r);
+
+    let result_algorithm_s: i32 = s::s(&nodes);
+    println!("Algorithm S: {}", result_algorithm_s);
+
+    let result_algorithm_rs: i32 = rs::rs(&nodes);
+    println!("Algorithm RS: {}", result_algorithm_rs);
 }
