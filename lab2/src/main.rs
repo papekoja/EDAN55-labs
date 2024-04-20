@@ -76,8 +76,6 @@ fn r_zero(graph: &mut HashMap<u32, Vec<u32>>) -> i32 {
     
 }
 
-fn r_one()
-
 fn remove_all_neighbours(graph: &mut HashMap<u32, Vec<u32>>, vertex: u32, neighbours: &Vec<u32>) {
     graph.remove(&vertex);
     neighbours.iter().for_each(|&neighbour| {graph.remove(&neighbour);});
