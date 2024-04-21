@@ -48,8 +48,6 @@ fn r_zero(graph: &mut HashMap<u32, Vec<u32>>) -> i32 {
             neighbours = Some(vertices.clone());
             break;
         }
-
-        
     }
 
     if let Some(vertex) = to_remove {        
