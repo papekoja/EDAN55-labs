@@ -76,6 +76,7 @@ fn r_algorithm(graph: &mut HashMap<u32, Vec<u32>>, call_count: &mut u32) -> i32 
                     combined_neighbours.extend(neighbours_of_w.iter().cloned());
                     combined_neighbours.remove(&vertex);
                     z_edges.extend(combined_neighbours.into_iter());      
+                    // println!("Adding z to graph: {z}: {:?}", z_edges);
                     break;
                 }
             },
@@ -89,6 +90,7 @@ fn r_algorithm(graph: &mut HashMap<u32, Vec<u32>>, call_count: &mut u32) -> i32 
             for &vertex in &z_edges {
                 graph.entry(vertex).or_insert_with(Vec::new).push(z);
             }
+            
             remove_vertex_and_neighbours(graph, vertex, &v_edges.unwrap());
         }
         else if let Some(vertices) = v_edges {
@@ -100,7 +102,7 @@ fn r_algorithm(graph: &mut HashMap<u32, Vec<u32>>, call_count: &mut u32) -> i32 
 
     }
 
-    /* Get the vertex with highest amount of neighbours by iterating through the graph */
+
     let (max_neighbours_vertex, neighbours) = graph.iter()
         .max_by_key(|(_, edges)| edges.len())
         .map(|(vertex, edges)| (*vertex, edges.clone()))
