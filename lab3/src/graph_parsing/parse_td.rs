@@ -76,9 +76,13 @@ fn build_edges_from_root(
     edges: &HashMap<usize, Vec<usize>>,
     idx: usize,
 ) {
-    tree.arena[bag_idxs[&idx]].children = edges[&idx].clone();
+    let arena_root_idx = bag_idxs[&idx];
+    tree.arena[arena_root_idx].children = edges[&idx].clone();
     edges[&idx].iter().for_each(|i| {
-        tree.arena[bag_idxs[i]].parent = Some(idx);
+        println!("setting parent for {} to {}", i, idx);
+        let child_arena_idx = bag_idxs[i];
+        tree.arena[child_arena_idx].parent = Some(child_arena_idx);
+        println!("parent for {} is {:?}",tree.arena[bag_idxs[i]].idx, tree.arena[bag_idxs[i]].parent);
     });
 }
 
