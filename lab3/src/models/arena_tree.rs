@@ -1,3 +1,5 @@
+/* Code from: https://dev.to/deciduously/no-more-tears-no-more-knots-arena-allocated-trees-in-rust-44k6 */
+
 #[derive(Debug)]
 pub struct Node<T>
 where
@@ -118,7 +120,7 @@ where
             }
         }
     }
-
+    
     // Recursive function to print a node and its children
     fn print_node(&self, idx: usize, depth: usize) {
         let node = &self.arena[idx];

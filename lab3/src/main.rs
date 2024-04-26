@@ -1,26 +1,10 @@
 mod graph_parsing;
 mod models;
-use models::arena_tree::ArenaTree;
+
+use graph_parsing::parse;
 
 fn main() {
-    let mut tree = ArenaTree::<String>::default();
-
-    // Add nodes
-    let root_idx = tree.node("Root".to_string());
-    let child1_idx = tree.node("Child1".to_string());
-    let child2_idx = tree.node("Child2".to_string());
-    let subchild1_idx = tree.node("SubChild1".to_string());
-
-    // Establish relationships
-    tree.arena[root_idx].children.push(child1_idx);
-    tree.arena[child1_idx].parent = Some(root_idx);
-    tree.arena[child1_idx].children.push(subchild1_idx);
-    tree.arena[subchild1_idx].parent = Some(child1_idx);
-    tree.arena[root_idx].children.push(child2_idx);
-    tree.arena[child2_idx].parent = Some(root_idx);
-
-    // Print the tree
-    tree.print_tree();
+    parse::parse_gr_and_tr("eppstein.td".to_string());
 }
 
 // To find a maximum weight independent set of G:
