@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
 /* Parses the normal undirected graph from the .gr files */
-pub fn get_graph(filename: String) {
+pub fn parse_gr(filename: &str) -> HashMap<usize, Vec<usize>> {
     let mut path: String = "./data/".to_string();
     path.push_str(&filename);
     
@@ -24,7 +24,5 @@ pub fn get_graph(filename: String) {
         }
     }
 
-    for (node, neighbours) in graph {
-        println!("{} {:?}", node, neighbours);
-    }
+    graph
 }

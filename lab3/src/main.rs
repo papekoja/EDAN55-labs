@@ -1,10 +1,18 @@
+use graph_parsing::{parse_gr::parse_gr, parse_td::parse_td};
+
 mod graph_parsing;
 mod models;
 
-use graph_parsing::parse;
-
 fn main() {
-    parse::parse_gr_and_tr("eppstein.td".to_string());
+    let filename = "eppstein".to_string();
+    let graph = parse_gr(&(filename.clone() + ".gr"));
+    let tree = parse_td(&(filename + ".td"));
+
+    println!("======== .gr ========");
+    println!("{:?}", graph);
+
+    println!("======== .td ========");
+    tree.print_tree();
 }
 
 // To find a maximum weight independent set of G:
