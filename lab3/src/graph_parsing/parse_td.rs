@@ -23,7 +23,7 @@ pub fn parse_td(filename: &str) -> ArenaTree<Vec<usize>> {
         let parts: Vec<&str> = line.split_whitespace().collect();
 
         match parts.get(0) {
-            Some(&"s") => continue,
+            Some(&"s") | Some(&"c") => continue,
             Some(&"b") => {
                 let idx = parts[1].parse::<usize>().unwrap();
                 let val = parts[2..]
