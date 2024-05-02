@@ -1,5 +1,6 @@
 use graph_parsing::{parse_gr::parse_gr, parse_td::parse_td};
 
+mod algorithm;
 mod graph_parsing;
 mod models;
 
@@ -30,11 +31,11 @@ fn _f_t() {
     //return max{f_r(U): U subs V_r is independent}
 }
 
-
 /*
-Inläsning:
-börja läs in träden. varje nod i trädet är en bag.
-en nod typ har en förälder och lista med barn, index, och lista med noder
-ha sedan en adjacency med alla noder separat. välj en nod som rot, sätt alla dess grannar från adjacency grafen till föräldrar och barn
+Gör en adjacency vektor för alla noder i en bag. (ettor och nollor)
+Gör sedan alla permutationer av alla sets och solla ut alla som inte är independent set.
+Det görs genom att göra AND mellan alla noder som är med i ett set genom adjacency matrixen, ifall det blir någon etta så är det inte
+ett independent set.
 
+så för detta har man alltså en adjacency matrix och en hashmap med independent sets.
 */
