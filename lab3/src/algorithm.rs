@@ -4,27 +4,24 @@ use crate::models::arena_tree::{ArenaTree, Node};
 
 // dp_table links all different independent sets to their maximum independent set weight as:
 // <u128, u32> = <bitmask of independent set, max weight>
-type DPTable = HashMap<u128, usize>;
+type DPTable = HashMap<u128, u32>;
 
 pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree<Vec<usize>>) {
-    // let adj_matrix = get_adjacency_matrix(graph);
-    // let bag = &tree.arena.get(&2).unwrap().val;
-    // let all_subsets = all_subsets(bag);
-    // println!("Subsets:");
-    // for subset in &all_subsets {
-    //     println!("{:?}", subset);
-    // }
-    // let independent_sets = get_independent_sets(&all_subsets, &adj_matrix);
-    // println!("Independent sets:");
-    // for independent_set in &independent_sets {
-    //     println!("{:?}", independent_set);
-    // }
     let adjacency_matrix = get_adjacency_matrix(graph);
 
     //root is always 1
     let root = tree.arena.get(&1).unwrap();
     let mut dp_tables: HashMap<usize, DPTable> = HashMap::new();
     post_order_traverse(tree, &adjacency_matrix, &mut dp_tables, root);
+    // print dp_tables
+    for (node, table) in dp_tables.iter() {
+        println!("Node: {:?}", node);
+        for (independent_set, weight) in table.iter() {
+            println!("Independent set: {:b}, weight: {:?}", independent_set, weight);
+        }
+    }
+    let max_weight = dp_tables.get(&1).unwrap().values().max().unwrap();
+    println!("Max weight: {:?}", max_weight);
 }
 
 fn post_order_traverse(
@@ -37,7 +34,7 @@ fn post_order_traverse(
         let child_node = tree.arena.get(child).unwrap();
         post_order_traverse(tree, graph, dp_tables, child_node)
     }
-    let mut dp_table: HashMap<u128, usize> = HashMap::new();
+    let mut dp_table: DPTable = HashMap::new();
     fill_table(tree, graph, &mut dp_table, dp_tables, node);
     dp_tables.insert(node.idx, dp_table);
 }
@@ -45,19 +42,61 @@ fn post_order_traverse(
 fn fill_table(
     tree: &ArenaTree<Vec<usize>>,
     graph: &HashMap<usize, u128>,
-    dp_table: &mut HashMap<u128, usize>,
+    dp_table: &mut DPTable,
     dp_tables: &HashMap<usize, DPTable>,
     node: &Node<Vec<usize>>,
 ) {
     let independent_sets = get_independent_sets(&node.val, graph);
+
     for independent_set in independent_sets {
-        let set_weight = independent_set.count_ones();
+        let weight = independent_set.count_ones();
         if node.children.is_empty() {
-            dp_table.insert(independent_set, )
+            dp_table.insert(independent_set, weight);
         } else {
-    
+            let mut total_weight = weight;
+
+            for child in &node.children {
+                let mut max_weight = 0;
+
+                let child_node = tree.arena.get(child).unwrap();
+                let child_dp_table = dp_tables.get(child).unwrap();
+                for (child_independent_set, child_weight) in child_dp_table.iter() {
+                    if is_compatible(independent_set, *child_independent_set, child_node, tree) {
+                        let weight =
+                            child_weight - (child_independent_set & independent_set).count_ones();
+                        if weight > max_weight {
+                            max_weight = weight;
+                        }
+                    }
+                }
+                total_weight += max_weight;
+            }
+            dp_table.insert(independent_set, total_weight);
         }
     }
+}
+
+fn is_compatible(
+    parent_independent_set: u128,
+    child_independent_set: u128,
+    child_node: &Node<Vec<usize>>,
+    tree: &ArenaTree<Vec<usize>>,
+) -> bool {
+    /* From the book:
+    U_i intersect V_t = U intersect V_ti */
+    let child_bag = set_to_bitmask(&child_node.val);
+    let parent_bag = set_to_bitmask(&tree.arena.get(&child_node.parent.unwrap()).unwrap().val);
+    let intersection = parent_independent_set & child_bag;
+    let child_intersection = child_independent_set & parent_bag;
+    intersection == child_intersection
+}
+
+fn set_to_bitmask(set: &Vec<usize>) -> u128 {
+    let mut bitmask: u128 = 0;
+    for node in set {
+        bitmask = bitmask | (1 << node);
+    }
+    bitmask
 }
 
 fn get_independent_sets(nodes: &Vec<usize>, adj_matrix: &HashMap<usize, u128>) -> Vec<u128> {
@@ -84,7 +123,7 @@ fn get_independent_sets(nodes: &Vec<usize>, adj_matrix: &HashMap<usize, u128>) -
 fn all_subsets(bag: &Vec<usize>) -> Vec<u128> {
     let mut subsets: Vec<u128> = vec![];
     for i in 0..(1 << bag.len()) {
-        let mut subset: u128 = vec![];
+        let mut subset: u128 = 0;
         for j in 0..bag.len() {
             if i & (1 << j) != 0 {
                 subset = subset | (1 << j);
@@ -93,14 +132,6 @@ fn all_subsets(bag: &Vec<usize>) -> Vec<u128> {
         subsets.push(subset);
     }
     subsets
-}
-
-fn bit_representation(set: &Vec<usize>) -> u128 {
-    let mut bits: u128 = 0;
-    for node in set {
-        bits = bits | (1 << node);
-    }
-    bits
 }
 
 fn get_adjacency_matrix(graph: &HashMap<usize, Vec<usize>>) -> HashMap<usize, u128> {
@@ -115,29 +146,3 @@ fn get_adjacency_matrix(graph: &HashMap<usize, Vec<usize>>) -> HashMap<usize, u1
     }
     adj_matrix
 }
-
-// To find a maximum weight independent set of G:
-fn _f_t() {
-    // given a tree decomposition (T, {Vt}) of G:
-    //Modify the tree decomposition if necessary so that it is nonredundant
-    //Root T at a node r
-    //for each node t of T in post-order
-    //  if t is a leaf then
-    //      for each independent set U of Vt
-    //          f_t(U)=w(U)
-    //  Else
-    //      for each independent set U of Vt
-    //          f_t(U) is determined by the recurrence in (10.8)
-    //return max{f_r(U): U subs V_r is independent}
-}
-
-/*
-Gör en adjacency vektor för alla noder i en bag. (ettor och nollor)
-Gör sedan alla permutationer av alla setet i bagen och solla ut alla som inte är independent set:
-Det görs genom att göra AND mellan
-•en vektor där alla noder som är med i setet är 1
-•och adjacency vektorn för de noder som är med i setet
-Ifall det finns en etta någonstans är det inte ett inependent set.
-
-För detta har man alltså en hashmap med independent sets.
-*/

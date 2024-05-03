@@ -7,7 +7,7 @@ mod graph_parsing;
 mod models;
 
 fn main() {
-    let filename = "eppstein".to_string();
+    let filename = "web4".to_string();
     let graph = parse_gr(&(filename.clone() + ".gr"));
     let tree = parse_td(&(filename + ".td"));
 
