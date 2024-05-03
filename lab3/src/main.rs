@@ -7,7 +7,7 @@ mod graph_parsing;
 mod models;
 
 fn main() {
-    let filename = "WorldMap".to_string();
+    let filename = "HanoiTowerGraph_4_3".to_string();
     let graph = parse_gr(&(filename.clone() + ".gr"));
     let tree = parse_td(&(filename + ".td"));
 
