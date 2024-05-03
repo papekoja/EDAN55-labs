@@ -9,17 +9,22 @@ type DPTable = HashMap<u128, u32>;
 pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree<Vec<usize>>) {
     let adjacency_matrix = get_adjacency_matrix(graph);
 
+    // let independent_sets = get_independent_sets(&tree.arena.get(&1).unwrap().val, &adjacency_matrix);
+    // for independent_set in independent_sets {
+    //     println!("Independent set: {:b}", independent_set);
+    // }
+
     //root is always 1
     let root = tree.arena.get(&1).unwrap();
     let mut dp_tables: HashMap<usize, DPTable> = HashMap::new();
     post_order_traverse(tree, &adjacency_matrix, &mut dp_tables, root);
     // print dp_tables
-    for (node, table) in dp_tables.iter() {
-        println!("Node: {:?}", node);
-        for (independent_set, weight) in table.iter() {
-            println!("Independent set: {:b}, weight: {:?}", independent_set, weight);
-        }
-    }
+    // for (node, table) in dp_tables.iter() {
+    //     println!("Node: {:?}", node);
+    //     for (independent_set, weight) in table.iter() {
+    //         println!("Independent set: {:b}, weight: {:?}", independent_set, weight);
+    //     }
+    // }
     let max_weight = dp_tables.get(&1).unwrap().values().max().unwrap();
     println!("Max weight: {:?}", max_weight);
 }
@@ -120,13 +125,13 @@ fn get_independent_sets(nodes: &Vec<usize>, adj_matrix: &HashMap<usize, u128>) -
     independent_sets
 }
 
-fn all_subsets(bag: &Vec<usize>) -> Vec<u128> {
+fn all_subsets(nodes: &Vec<usize>) -> Vec<u128> {
     let mut subsets: Vec<u128> = vec![];
-    for i in 0..(1 << bag.len()) {
+    for i in 0..(1 << nodes.len()) {
         let mut subset: u128 = 0;
-        for j in 0..bag.len() {
+        for j in 0..nodes.len() {
             if i & (1 << j) != 0 {
-                subset = subset | (1 << j);
+                subset = subset | (1 << nodes[j]);
             }
         }
         subsets.push(subset);

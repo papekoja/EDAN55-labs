@@ -7,15 +7,15 @@ mod graph_parsing;
 mod models;
 
 fn main() {
-    let filename = "web4".to_string();
+    let filename = "WorldMap".to_string();
     let graph = parse_gr(&(filename.clone() + ".gr"));
     let tree = parse_td(&(filename + ".td"));
 
-    println!("======== .gr ========");
-    println!("{:?}", graph);
+    // println!("======== .gr ========");
+    // println!("{:?}", graph);
 
-    println!("======== .td ========");
-    tree.print_tree();
+    // println!("======== .td ========");
+    // tree.print_tree();
 
     algorithm(&graph, &tree);
 }
