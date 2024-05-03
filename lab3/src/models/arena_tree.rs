@@ -11,6 +11,7 @@ where
     pub val: T,
     pub parent: Option<usize>,
     pub children: Vec<usize>,
+    
 }
 
 impl<T> Node<T>

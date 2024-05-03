@@ -7,7 +7,7 @@ use std::{
 use crate::models::arena_tree::ArenaTree;
 
 /* Parses the .td file into nodes and edges. The nodes are put in the tree and the edges are put in a hashmap.
-Then builds the edges in the tree recursively with some node as the root.*/
+Then builds the edges in the tree recursively with some node as the root, right now it's set to node 1.*/
 pub fn parse_td(filename: &str) -> ArenaTree<Vec<usize>> {
     let mut path: String = "./data/".to_string();
     path.push_str(&filename);
