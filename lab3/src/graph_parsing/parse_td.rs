@@ -69,6 +69,7 @@ fn rec_build_edges(
 ) {
     /* If it's not the root node and it only has one child, it's a leaf. */
     if tree.arena.get(&node_idx).unwrap().parent.is_some() && edges[&node_idx].len() == 1 {
+        tree.leafs.push(node_idx);
         return;
     }
 

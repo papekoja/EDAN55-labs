@@ -33,6 +33,7 @@ where
     T: PartialEq,
 {
     pub arena: HashMap<usize, Node<T>>,
+    pub leafs: Vec<usize>,
 }
 
 impl<T> ArenaTree<T>
@@ -68,9 +69,10 @@ where
 
     pub fn print_tree(&self) {
         println!(
-            "Tree contains {} nodes and {} edges",
+            "Tree contains {} nodes and {} edges.\nLeafs: {:?}",
             self.size(),
-            self.edges()
+            self.edges(),
+            self.leafs
         );
         for (&index, node) in &self.arena {
             if node.parent.is_none() {
