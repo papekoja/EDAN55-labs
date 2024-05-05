@@ -8,23 +8,10 @@ type ArenaTree = crate::models::arena_tree::ArenaTree<Vec<usize>>;
 type Node = crate::models::arena_tree::Node<Vec<usize>>;
 
 pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree) {
-    // let independent_sets = get_independent_sets(&tree.arena.get(&1).unwrap().val, &adjacency_matrix);
-    // for independent_set in independent_sets {
-    //     println!("Independent set: {:b}", independent_set);
-    // }
-
-    
     //root is always 1
     let root = tree.arena.get(&1).unwrap();
     let mut dp_tables: HashMap<usize, DPTable> = HashMap::new();
     post_order_traverse(tree, graph, &mut dp_tables, root);
-    // print dp_tables
-    // for (node, table) in dp_tables.iter() {
-    //     println!("Node: {:?}", node);
-    //     for (independent_set, weight) in table.iter() {
-    //         println!("Independent set: {:b}, weight: {:?}", independent_set, weight);
-    //     }
-    // }
     let max_weight = dp_tables.get(&1).unwrap().values().max().unwrap();
     println!("Max weight: {:?}", max_weight);
 }
