@@ -34,7 +34,14 @@ pub fn parse_td(filename: &str) -> ArenaTree<Vec<usize>> {
                         eprintln!("Failed to parse indices: {}", e);
                         vec![]
                     });
-                tree.insert_node(idx, val);
+                let global_to_local_index = val.iter().enumerate().fold(
+                    HashMap::new(),
+                    |mut acc, (local_idx, &global_idx)| {
+                        acc.insert(global_idx, local_idx);
+                        acc
+                    },
+                );
+                tree.insert_node(idx, val, global_to_local_index);
             }
             Some(first) => {
                 if !first.is_empty() {

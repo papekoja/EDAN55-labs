@@ -1,23 +1,23 @@
 use std::collections::HashMap;
 
-use crate::models::arena_tree::{ArenaTree, Node};
-
 // dp_table links all different independent sets to their maximum independent set weight as:
 // <u128, u32> = <bitmask of independent set, max weight>
 type DPTable = HashMap<u128, u32>;
+type Graph = HashMap<usize, Vec<usize>>;
+type ArenaTree = crate::models::arena_tree::ArenaTree<Vec<usize>>;
+type Node = crate::models::arena_tree::Node<Vec<usize>>;
 
-pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree<Vec<usize>>) {
-    let adjacency_matrix = get_adjacency_matrix(graph);
-
+pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree) {
     // let independent_sets = get_independent_sets(&tree.arena.get(&1).unwrap().val, &adjacency_matrix);
     // for independent_set in independent_sets {
     //     println!("Independent set: {:b}", independent_set);
     // }
 
+    
     //root is always 1
     let root = tree.arena.get(&1).unwrap();
     let mut dp_tables: HashMap<usize, DPTable> = HashMap::new();
-    post_order_traverse(tree, &adjacency_matrix, &mut dp_tables, root);
+    post_order_traverse(tree, graph, &mut dp_tables, root);
     // print dp_tables
     // for (node, table) in dp_tables.iter() {
     //     println!("Node: {:?}", node);
@@ -30,45 +30,54 @@ pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree<Vec<usize>
 }
 
 fn post_order_traverse(
-    tree: &ArenaTree<Vec<usize>>,
-    graph: &HashMap<usize, u128>,
+    tree: &ArenaTree,
+    graph: &Graph,
     dp_tables: &mut HashMap<usize, DPTable>,
-    node: &Node<Vec<usize>>,
+    node: &Node,
 ) {
     for child in &node.children {
         let child_node = tree.arena.get(child).unwrap();
         post_order_traverse(tree, graph, dp_tables, child_node)
     }
+
     let mut dp_table: DPTable = HashMap::new();
     fill_table(tree, graph, &mut dp_table, dp_tables, node);
     dp_tables.insert(node.idx, dp_table);
 }
 
 fn fill_table(
-    tree: &ArenaTree<Vec<usize>>,
-    graph: &HashMap<usize, u128>,
+    tree: &ArenaTree,
+    graph: &Graph,
     dp_table: &mut DPTable,
     dp_tables: &HashMap<usize, DPTable>,
-    node: &Node<Vec<usize>>,
+    node: &Node,
 ) {
-    let independent_sets = get_independent_sets(&node.val, graph);
+    let bag_adj_matrix = bag_adjacency_matrix(node, graph);
+    let independent_sets = get_independent_sets(&bag_adj_matrix);
 
-    for independent_set in independent_sets {
-        let weight = independent_set.count_ones();
+    for u in independent_sets {
+        let weight = u.count_ones();
         if node.children.is_empty() {
-            dp_table.insert(independent_set, weight);
+            dp_table.insert(u, weight);
         } else {
             let mut total_weight = weight;
+            let u_global_idxs = to_global_idxs(u, node);
 
             for child in &node.children {
                 let mut max_weight = 0;
-
                 let child_node = tree.arena.get(child).unwrap();
                 let child_dp_table = dp_tables.get(child).unwrap();
+                let u_intersect_vti = to_local_bitmask(&u_global_idxs, child_node);
+                //following line means that we get a general mask of the intersection of the parent and child.
+                //this we can use to quicker calculate u_i intersect v_t
+                let vt_intersect_vti = to_local_bitmask( &node.global_to_local.keys().copied().collect(), child_node);
+
                 for (child_independent_set, child_weight) in child_dp_table.iter() {
-                    if is_compatible(independent_set, *child_independent_set, child_node, tree) {
+                    let ui_intersect_vt = child_independent_set & vt_intersect_vti;
+
+                    if ui_intersect_vt == u_intersect_vti {
                         let weight =
-                            child_weight - (child_independent_set & independent_set).count_ones();
+                            child_weight - (ui_intersect_vt & child_independent_set).count_ones();
                         if weight > max_weight {
                             max_weight = weight;
                         }
@@ -76,24 +85,32 @@ fn fill_table(
                 }
                 total_weight += max_weight;
             }
-            dp_table.insert(independent_set, total_weight);
+            dp_table.insert(u, total_weight);
         }
     }
 }
 
-fn is_compatible(
-    parent_independent_set: u128,
-    child_independent_set: u128,
-    child_node: &Node<Vec<usize>>,
-    tree: &ArenaTree<Vec<usize>>,
-) -> bool {
-    /* From the book:
-    U_i intersect V_t = U intersect V_ti */
-    let child_bag = set_to_bitmask(&child_node.val);
-    let parent_bag = set_to_bitmask(&tree.arena.get(&child_node.parent.unwrap()).unwrap().val);
-    let intersection = parent_independent_set & child_bag;
-    let child_intersection = child_independent_set & parent_bag;
-    intersection == child_intersection
+fn to_local_bitmask(global_idxs: &Vec<usize>, node: &Node) -> u128 {
+    let mut bitmask: u128 = 0;
+    for global_idx in global_idxs {
+        if node.global_to_local.contains_key(global_idx) {
+            let local_idx = node.global_to_local[global_idx];
+            bitmask = bitmask | (1 << local_idx);
+        }
+    }
+    bitmask
+}
+
+fn to_global_idxs(bitmask: u128, node: &Node) -> Vec<usize> {
+    let mut global_idxs: Vec<usize> = vec![];
+    for (global_idx, local_idx) in &node.global_to_local {
+        //println!("bitmask: {:b}, local_idx: {:?}", bitmask, local_idx);
+        if bitmask & (1 << *local_idx) != 0 {
+            global_idxs.push(*global_idx);
+        }
+    }
+    global_idxs
+
 }
 
 fn set_to_bitmask(set: &Vec<usize>) -> u128 {
@@ -104,15 +121,15 @@ fn set_to_bitmask(set: &Vec<usize>) -> u128 {
     bitmask
 }
 
-fn get_independent_sets(nodes: &Vec<usize>, adj_matrix: &HashMap<usize, u128>) -> Vec<u128> {
-    let all_subsets = all_subsets(nodes);
+fn get_independent_sets(bag_adj_matrix: &Vec<u128>) -> Vec<u128> {
+    let all_subsets = all_subsets(bag_adj_matrix.len());
+    let mut independent_sets: Vec<u128> = vec![];
 
-    let mut independent_sets = vec![];
     for subset in &all_subsets {
         let mut is_independent = true;
-        for node in nodes {
-            if subset & (1 << node) != 0 {
-                if subset & adj_matrix[node] != 0 {
+        for idx in 0..bag_adj_matrix.len() {
+            if subset & (1 << idx) != 0 {
+                if subset & bag_adj_matrix[idx] != 0 {
                     is_independent = false;
                     break;
                 }
@@ -125,13 +142,13 @@ fn get_independent_sets(nodes: &Vec<usize>, adj_matrix: &HashMap<usize, u128>) -
     independent_sets
 }
 
-fn all_subsets(nodes: &Vec<usize>) -> Vec<u128> {
+fn all_subsets(set_size: usize) -> Vec<u128> {
     let mut subsets: Vec<u128> = vec![];
-    for i in 0..(1 << nodes.len()) {
+    for i in 0..(1 << set_size) {
         let mut subset: u128 = 0;
-        for j in 0..nodes.len() {
+        for j in 0..set_size {
             if i & (1 << j) != 0 {
-                subset = subset | (1 << nodes[j]);
+                subset = subset | (1 << j);
             }
         }
         subsets.push(subset);
@@ -139,15 +156,19 @@ fn all_subsets(nodes: &Vec<usize>) -> Vec<u128> {
     subsets
 }
 
-fn get_adjacency_matrix(graph: &HashMap<usize, Vec<usize>>) -> HashMap<usize, u128> {
-    let mut adj_matrix: HashMap<usize, u128> = HashMap::new();
-    for (node, neighbours) in graph.iter() {
-        adj_matrix.insert(*node, 0);
-        neighbours.iter().for_each(|n| {
-            let adj_bits = adj_matrix.get_mut(node).unwrap();
-            let neighbour_bit: u128 = 1 << n;
-            *adj_bits = *adj_bits | neighbour_bit;
-        });
+fn bag_adjacency_matrix(tree_node: &Node, graph: &Graph) -> Vec<u128> {
+    let mut adj_matrix: Vec<u128> = vec![];
+    let bag = &tree_node.val;
+
+    for node in bag {
+        let mut bitmask: u128 = 0;
+        for neighbor in &graph[node] {
+            if bag.contains(neighbor) {
+                let local_index = tree_node.global_to_local[neighbor];
+                bitmask = bitmask | (1 << local_index);
+            }
+        }
+        adj_matrix.push(bitmask);
     }
     adj_matrix
 }

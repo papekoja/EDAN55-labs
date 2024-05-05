@@ -11,6 +11,8 @@ where
     pub val: T,
     pub parent: Option<usize>,
     pub children: Vec<usize>,
+    // key: global index, value: local index
+    pub global_to_local: HashMap<usize, usize>,
     
 }
 
@@ -18,12 +20,13 @@ impl<T> Node<T>
 where
     T: PartialEq,
 {
-    pub fn new(idx: usize, val: T) -> Self {
+    pub fn new(idx: usize, val: T, global_to_local: HashMap<usize, usize>) -> Self {
         Self {
             idx,
             val,
             parent: None,
             children: vec![],
+            global_to_local,
         }
     }
 }
@@ -41,8 +44,8 @@ impl<T> ArenaTree<T>
 where
     T: PartialEq + std::fmt::Debug,
 {
-    pub fn insert_node(&mut self, idx: usize, val: T) {
-        let new_node = Node::new(idx, val);
+    pub fn insert_node(&mut self, idx: usize, val: T, global_to_local: HashMap<usize, usize>) {
+        let new_node = Node::new(idx, val, global_to_local);
         if let Some(node) = self.arena.get_mut(&idx) {
             *node = new_node;
             eprintln!("Warning: inserting node to already existing");
