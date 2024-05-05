@@ -57,7 +57,8 @@ fn fill_table(
                 let u_intersect_vti = to_local_bitmask(&u_global_idxs, child_node);
                 //following line means that we get a general mask of the intersection of the parent and child.
                 //this we can use to quicker calculate u_i intersect v_t
-                let vt_intersect_vti = to_local_bitmask( &node.global_to_local.keys().copied().collect(), child_node);
+                let vt_intersect_vti =
+                    to_local_bitmask(&node.global_to_local.keys().copied().collect(), child_node);
 
                 for (child_independent_set, child_weight) in child_dp_table.iter() {
                     let ui_intersect_vt = child_independent_set & vt_intersect_vti;
@@ -97,15 +98,6 @@ fn to_global_idxs(bitmask: u128, node: &Node) -> Vec<usize> {
         }
     }
     global_idxs
-
-}
-
-fn set_to_bitmask(set: &Vec<usize>) -> u128 {
-    let mut bitmask: u128 = 0;
-    for node in set {
-        bitmask = bitmask | (1 << node);
-    }
-    bitmask
 }
 
 fn get_independent_sets(bag_adj_matrix: &Vec<u128>) -> Vec<u128> {

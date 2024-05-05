@@ -13,7 +13,6 @@ where
     pub children: Vec<usize>,
     // key: global index, value: local index
     pub global_to_local: HashMap<usize, usize>,
-    
 }
 
 impl<T> Node<T>
