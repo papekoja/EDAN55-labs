@@ -1,3 +1,5 @@
+use std::vec;
+
 use graph_parsing::{parse_gr::parse_gr, parse_td::parse_td};
 
 use crate::algorithm::algorithm;
@@ -7,15 +9,26 @@ mod graph_parsing;
 mod models;
 
 fn main() {
-    let filename = "WorldMap".to_string();
-    let graph = parse_gr(&(filename.clone() + ".gr"));
-    let tree = parse_td(&(filename + ".td"));
+    let filenames = vec![
+        "web4",
+        "WorldMap",
+        "FibonacciTree_10",
+        "StarGraph_100",
+        "TutteGraph",
+        "DorogovtsevGoltsevMendesGraph",
+        "HanoiTowerGraph_4_3",
+    ];
+    for filename in filenames {
+        println!("======== {} ========", filename);
+        let graph = parse_gr(&(filename.to_owned() + ".gr"));
+        let tree = parse_td(&(filename.to_string() + ".td"));
 
-    println!("======== .gr ========");
-    println!("{:?}", graph);
+        // println!("======== .gr ========");
+        // println!("{:?}", graph);
 
-    println!("======== .td ========");
-    tree.print_tree();
+        // println!("======== .td ========");
+        // tree.print_tree();
 
-    algorithm(&graph, &tree);
+        algorithm(&graph, &tree);
+    }
 }
