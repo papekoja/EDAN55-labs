@@ -23,7 +23,8 @@ pub fn parse_td(filename: &str) -> ArenaTree<Vec<usize>> {
         let parts: Vec<&str> = line.split_whitespace().collect();
 
         match parts.get(0) {
-            Some(&"s") | Some(&"c") => continue,
+            Some(&"c") => continue,
+            Some(&"s") => print!("w: {}, ", parts[3].parse::<i32>().unwrap() - 1),
             Some(&"b") => {
                 let idx = parts[1].parse::<usize>().unwrap();
                 let val = parts[2..]
@@ -65,7 +66,9 @@ pub fn parse_td(filename: &str) -> ArenaTree<Vec<usize>> {
         }
     }
 
-    rec_build_edges(&mut tree, &edges, 1);
+    if !tree.arena.is_empty() {
+        rec_build_edges(&mut tree, &edges, 1);
+    }
     tree
 }
 
@@ -75,14 +78,16 @@ fn rec_build_edges(
     node_idx: usize,
 ) {
     /* If it's not the root node and it only has one child, it's a leaf. */
-    if tree.arena.get(&node_idx).unwrap().parent.is_some() && edges[&node_idx].len() == 1 {
+    if tree.arena.get(&node_idx).unwrap().parent.is_some() && edges[&node_idx].len() == 1
+        || edges.get(&node_idx).is_none()
+    {
         tree.leafs.push(node_idx);
         return;
     }
 
     /* take a node idx and set its edges as children as long as they're not a parent.
     set the parent to the children to this node. */
-    for &child_idx in edges[&node_idx][0..].iter() {
+    for &child_idx in edges.get(&node_idx).unwrap() {
         let node = tree.arena.get_mut(&node_idx).unwrap();
         let parent = node.parent;
 

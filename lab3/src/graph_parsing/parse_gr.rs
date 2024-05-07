@@ -16,6 +16,9 @@ pub fn parse_gr(filename: &str) -> HashMap<usize, Vec<usize>> {
         let line = line.unwrap();
 
         let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts[0] == "p" {
+            print!("n: {} ", parts[2]);
+        } 
         if parts[0] != "c" && parts[0] != "p" {
             let node1 = parts[0].parse::<usize>().unwrap();
             let node2 = parts[1].parse::<usize>().unwrap();

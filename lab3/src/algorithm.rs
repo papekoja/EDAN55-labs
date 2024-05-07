@@ -9,13 +9,17 @@ type Node = crate::models::arena_tree::Node<Vec<usize>>;
 
 pub fn algorithm(graph: &HashMap<usize, Vec<usize>>, tree: &ArenaTree) {
     //root is always 1
-    let root = tree.arena.get(&1).unwrap();
-    let mut dp_tables: HashMap<usize, DPTable> = HashMap::new();
-    post_order_traverse(tree, graph, &mut dp_tables, root);
-    let max_weight = dp_tables.get(&1).unwrap().values().max().unwrap();
-    println!("Max weight: {:?}", max_weight);
+    if let Some(root) = tree.arena.get(&1) {
+        let mut dp_tables: HashMap<usize, DPTable> = HashMap::new();
+        post_order_traverse(tree, graph, &mut dp_tables, root);
+        let max_weight = dp_tables.get(&1).unwrap().values().max().unwrap();
+        println!("α: {:?}", max_weight);
+    } else {
+        println!("α: 0");
+    }
 }
 
+// to traverse the tree in post-order and fill the dp_table for each node
 fn post_order_traverse(
     tree: &ArenaTree,
     graph: &Graph,
@@ -32,6 +36,8 @@ fn post_order_traverse(
     dp_tables.insert(node.idx, dp_table);
 }
 
+// to fill the dp_table for each node.
+// different for leafs and non-leafs
 fn fill_table(
     tree: &ArenaTree,
     graph: &Graph,
@@ -78,6 +84,8 @@ fn fill_table(
     }
 }
 
+// Global indexes are the indexes from the original graph and local indexes are the indexes in the bag
+// to convert global indexes to local indexes
 fn to_local_bitmask(global_idxs: &Vec<usize>, node: &Node) -> u128 {
     let mut bitmask: u128 = 0;
     for global_idx in global_idxs {
@@ -89,6 +97,7 @@ fn to_local_bitmask(global_idxs: &Vec<usize>, node: &Node) -> u128 {
     bitmask
 }
 
+// to convert local indexes to global indexes
 fn to_global_idxs(bitmask: u128, node: &Node) -> Vec<usize> {
     let mut global_idxs: Vec<usize> = vec![];
     for (global_idx, local_idx) in &node.global_to_local {
@@ -100,6 +109,7 @@ fn to_global_idxs(bitmask: u128, node: &Node) -> Vec<usize> {
     global_idxs
 }
 
+// sorts out all the independent sets from all power sets of a bag
 fn get_independent_sets(bag_adj_matrix: &Vec<u128>) -> Vec<u128> {
     let all_subsets = all_subsets(bag_adj_matrix.len());
     let mut independent_sets: Vec<u128> = vec![];
@@ -121,9 +131,10 @@ fn get_independent_sets(bag_adj_matrix: &Vec<u128>) -> Vec<u128> {
     independent_sets
 }
 
+// generates all subsets of a set
 fn all_subsets(set_size: usize) -> Vec<u128> {
     let mut subsets: Vec<u128> = vec![];
-    for i in 0..(1 << set_size) {
+    for i in (0 as u128)..(1 << set_size) {
         let mut subset: u128 = 0;
         for j in 0..set_size {
             if i & (1 << j) != 0 {
@@ -135,6 +146,7 @@ fn all_subsets(set_size: usize) -> Vec<u128> {
     subsets
 }
 
+// generates the adjacency matrix of a bag
 fn bag_adjacency_matrix(tree_node: &Node, graph: &Graph) -> Vec<u128> {
     let mut adj_matrix: Vec<u128> = vec![];
     let bag = &tree_node.val;
