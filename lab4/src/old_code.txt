@@ -1,0 +1,14 @@
+fn average(city: City, runs: u32) -> (f64, f64) {
+    let mut fedups_total_runtime = 0;
+    let mut postnhl_total_runtime = 0;
+    
+    let _city_ref = Arc::new(city);
+    for _ in 0..runs {
+        let (fedup_runtime, postnhl_runtime) = _montecarlo(&city);
+        let (fedup_runtime, postnhl_runtime) = _montecarlo_t(&_city_ref);
+        fedups_total_runtime += fedup_runtime;
+        postnhl_total_runtime += postnhl_runtime;
+    }
+
+    (fedups_total_runtime as f64/ runs as f64, postnhl_total_runtime as f64/ runs as f64)
+}
