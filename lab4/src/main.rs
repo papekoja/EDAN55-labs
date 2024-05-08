@@ -1,7 +1,11 @@
 use std::env;
+use std::io;
+use std::io::Write;
 use std::thread;
 use std::sync::Arc;
+
 mod models;
+mod menu;
 use models::{City, CityError};
 
 fn main() -> Result<(), CityError>{
@@ -10,35 +14,52 @@ fn main() -> Result<(), CityError>{
         panic!("No input file, usage: cargo run -- <file-path>");
     } 
     let city = City::config_city(args[1].as_str())?;
+    // println!("{:#?}", city);
+    
+    menu::print_menu();
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    stdin.read_line(&mut buffer).map_err(|err| CityError::IoError(err))?;
+    let choice = buffer.trim().parse::<usize>().map_err(|_| CityError::ParseIntError)?;
 
-    // let (time_fedups, time_postnhl) = _montecarlo(&city);
-    // let (time_fedups, time_postnhl) = _montecarlo_with_threads(city);
-    let (time_fedups, time_postnhl) = average_t(city, 1000000);
-
-    println!("FedUPS: {}", time_fedups);    
-    println!("PostNHL: {}", time_postnhl);
+    menu(choice, city)?;
 
     Ok(())
 }
 
-fn _montecarlo_t(city: &Arc<City>) -> (u32, u32) {
+fn menu(choice: usize, city: City) -> Result<(), CityError> {
+    let time_fedups;
+    let time_postnhl;
+    match choice {
+        1 => {
+            time_fedups = city.find_path_montecarlo(city.get_start_a()) as f64;
+            time_postnhl = city.find_path_montecarlo(city.get_start_b()) as f64;
+        },
+        2 => {
+            let mut buffer = String::new();
+            let stdin = io::stdin();
+            print!("Enter number of runs: ");
+            io::stdout().flush().map_err(|err| CityError::IoError(err))?;
+            stdin.read_line(&mut buffer).map_err(|err| CityError::IoError(err))?;
+            let runs = buffer.trim().parse::<u32>().map_err(|_| CityError::ParseIntError)?;
 
-    let city_for_fedups = Arc::clone(&city);
-    let handle_fed = thread::spawn(move || {
-        city_for_fedups.find_path_montecarlo(city_for_fedups.get_start_a())
-    });
-    
-    let city_for_postnhl = Arc::clone(&city);
-    let handle_nhl = thread::spawn(move || {
-        city_for_postnhl.find_path_montecarlo(city_for_postnhl.get_start_b())
-    });
-
-    let time_fedups = handle_fed.join().unwrap();
-    let time_postnhl = handle_nhl.join().unwrap();
-
-    (time_fedups, time_postnhl)
+            let (total_fedups, total_postnhl) = calculate_average(city, runs);
+            time_fedups = total_fedups;
+            time_postnhl = total_postnhl;
+        },
+        3 => {
+            time_fedups = city.find_path_markov(city.get_start_a()) as f64;
+            time_postnhl = city.find_path_markov(city.get_start_b()) as f64;
+        },
+        _ => {
+            eprintln!("Unknown input.");
+            return Err(CityError::InvalidInput);
+        },
+    }
+    println!("FedUPS: {}", time_fedups);    
+    println!("PostNHL: {}", time_postnhl);
+    Ok(())
 }
-
 
 fn run_montecarlo_chunk(city: &City, runs: u32) -> (f64, f64) {
     let mut fedups_total_runtime = 0;
@@ -53,27 +74,36 @@ fn run_montecarlo_chunk(city: &City, runs: u32) -> (f64, f64) {
 }
 
 
-fn average_t(city: City, total_runs: u32) -> (f64, f64) {
+fn calculate_average(city: City, total_runs: u32) -> (f64, f64) {
+    
     let city = Arc::new(city);
-    let num_threads = 1000;
+    let num_threads = if total_runs < 1000 { 1 } else { 1000 };
     let runs_per_thread = total_runs / num_threads;
-    let mut handles = vec![];
+    let mut handles = Vec::with_capacity(num_threads as usize);
+    
     for _ in 0..num_threads {
         let city_clone = Arc::clone(&city); // Clone Arc, not the city itself
-        let handle = thread::spawn(move || {
+        handles.push(thread::spawn(move || {
             run_montecarlo_chunk(&city_clone, runs_per_thread)
-        });
-        handles.push(handle);
+        }));
     }
+
     let mut total_fedups: f64 = 0.0;
     let mut total_postnhl: f64 = 0.0;
-    let mut i = 1;
-    for handle in handles {
+    let mut runs_completed = 0;
+
+    for (i, handle) in handles.into_iter().enumerate() {
         let (fedups, postnhl) = handle.join().unwrap();
-        println!("{} threads has finished!", i);
+
         total_fedups += fedups;
         total_postnhl += postnhl;
-        i += 1;
+        runs_completed += runs_per_thread;
+        if (i + 1) % 10 == 0 && num_threads > 1 {
+            println!("{} threads has finished!", i + 1);
+            println!("fedups:  {:.2}", (total_fedups as f64 / runs_completed as f64));
+            println!("postnhl: {:.2}", (total_postnhl as f64/ runs_completed as f64));
+            println!("-----------");
+        }
     }
 
     (total_fedups / total_runs as f64, total_postnhl / total_runs as f64)
