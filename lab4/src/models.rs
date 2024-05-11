@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, mem};
 use rand::distributions::{
         Distribution, 
         WeightedIndex
@@ -18,6 +18,7 @@ pub enum CityError {
 
 #[derive(Debug, Clone)]
 pub struct City {
+    reachable: Vec<usize>,
     road_system: Vec<Intersection>,
     prob_matrix: DMatrix<f64>,
     travel_matrix: DMatrix<u32>,
@@ -35,12 +36,12 @@ impl Road {
     pub fn new(
         intersection_id:  usize,
         travel_time:        u32,
-        prob:        f64,
+        probability:        f64,
     ) -> Self {
         Self {
-            intersection_id:    intersection_id,
-            travel_time:            travel_time,
-            probability:                   prob,
+            intersection_id,
+            travel_time,
+            probability,
         }
     } 
 }
@@ -58,6 +59,9 @@ impl Intersection {
     }
     pub fn add_road(&mut self, road: Road) {
         self.roads.push(road);
+    }
+    pub fn get_roads(&self) -> &Vec<Road> {
+        &self.roads
     }
     
 }
@@ -131,9 +135,10 @@ impl CityConfig {
 
 
 impl City {
-    pub fn new(config: CityConfig, prob_matrix: DMatrix<f64>, travel_matrix: DMatrix<u32>) -> Self {
+    pub fn new(config: CityConfig, prob_matrix: DMatrix<f64>, travel_matrix: DMatrix<u32>, reachable: Vec<usize>) -> Self {
         Self {
             road_system: vec![Intersection::new(); config.num_intersections],
+            reachable: reachable,
             prob_matrix: prob_matrix,
             travel_matrix: travel_matrix,
             config: config,
@@ -152,7 +157,7 @@ impl City {
         let prob_matrix: DMatrix<f64> = DMatrix::zeros(config.num_intersections, config.num_intersections);
         let travel_matrix: DMatrix<u32> = DMatrix::zeros(config.num_intersections, config.num_intersections);
 
-        let mut city: City = Self::new(config, prob_matrix, travel_matrix); 
+        let mut city: City = Self::new(config, prob_matrix, travel_matrix, Vec::new()); 
 
         for line in lines {
             let parts: Vec<&str> = line.split_whitespace().collect();
@@ -172,6 +177,11 @@ impl City {
             city.add_road(intersect_id_u, intersect_id_v, road_u_to_v);
             city.add_road(intersect_id_v, intersect_id_u, road_v_to_u);
         }
+
+        city.reachable_from_endpoint();
+        
+        city.trim_matrices();
+
         Ok(city)
     }
 
@@ -188,15 +198,65 @@ impl City {
     pub fn get_start_b(&self) -> usize {
         self.config.start_b
     }
+    pub fn reachable_from_endpoint(&mut self) { 
+        let mut visited: Vec<usize> = vec![];
+        let start = self.config.end_intersection;
+        
+        visited.push(start);
+        self.dfs(start, &mut visited);
+        
+        self.reachable = visited;
+    }
+
+    pub fn trim_matrices(&mut self) {
+        
+        let to_remove: Vec<usize> = (0..self.config.num_intersections)
+            .filter(|i| !self.reachable.contains(i))
+            .collect();
+    
+        let mut temp_prob_matrix = mem::replace(&mut self.prob_matrix, DMatrix::zeros(0, 0)); // replace with an appropriately sized temporary matrix if needed
+        let mut temp_travel_matrix = mem::replace(&mut self.travel_matrix, DMatrix::zeros(0, 0));
+    
+        for i in to_remove.iter().rev() { // iterate in reverse to handle indices correctly
+            temp_prob_matrix = temp_prob_matrix.remove_column(*i);
+            temp_prob_matrix = temp_prob_matrix.remove_row(*i);
+            temp_travel_matrix = temp_travel_matrix.remove_column(*i);
+            temp_travel_matrix = temp_travel_matrix.remove_row(*i);
+        }
+    
+        // Put the modified matrices back
+        self.prob_matrix = temp_prob_matrix;
+        self.travel_matrix = temp_travel_matrix;
+    }
+
 
 }
 
 
-
 impl City {
-    // Algorithms
+    // Algorithms        
+    pub fn dfs(&self, intersection_id: usize, visited: &mut Vec<usize>) {
+        for road in self.road_system[intersection_id].roads.iter() {
+            if !visited.contains(&road.intersection_id) {
+                visited.push(road.intersection_id);
+                self.dfs(road.intersection_id, visited);
+            }
+        }
+    }
+
     pub fn find_path_markov(&self, start: usize) -> f64 {
-        let dim = self.config.num_intersections;
+
+        if !self.reachable.contains(&start) {
+            return f64::NAN;
+        }
+
+        let dim = self.prob_matrix.shape().0;
+        let count = (0..self.config.num_intersections)
+            .filter(|i| !self.reachable.contains(i))
+            .filter(|val| *val < start)
+            .count();
+        let start = start - count;
+
         
         let a: &DMatrix<f64> = &self.prob_matrix;
         let t: DMatrix<f64> = self.travel_matrix.map(|n| n as f64);
@@ -220,6 +280,10 @@ impl City {
     }
 
     pub fn find_path_montecarlo(&self, start: usize) -> u32 {
+        if !self.reachable.contains(&start) {
+            return u32::MAX;
+        }
+
         let mut total_time = 0;
         let mut current_intersection = start;
         let mut rng = thread_rng();

@@ -15,7 +15,7 @@ fn main() -> Result<(), CityError>{
     } 
     let city = City::config_city(args[1].as_str())?;
     // println!("{:#?}", city);
-    
+
     menu::print_menu();
     let mut buffer = String::new();
     let stdin = io::stdin();
@@ -98,7 +98,7 @@ fn calculate_average(city: City, total_runs: u32) -> (f64, f64) {
         total_fedups += fedups;
         total_postnhl += postnhl;
         runs_completed += runs_per_thread;
-        if (i + 1) % 10 == 0 && num_threads > 1 {
+        if (i + 1) % (num_threads as usize/10) == 0 && num_threads > 1 {
             println!("{} threads has finished!", i + 1);
             println!("fedups:  {:.2}", (total_fedups as f64 / runs_completed as f64));
             println!("postnhl: {:.2}", (total_postnhl as f64/ runs_completed as f64));
